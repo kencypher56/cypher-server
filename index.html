@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cypher Server</title>
+<link rel="stylesheet" href="/_static/styles.css"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        mono: ['"JetBrains Mono"', '"Fira Code"', 'Consolas', 'monospace'],
+        display: ['"Orbitron"', '"Exo 2"', 'sans-serif'],
+        body: ['"Rajdhani"', '"Exo 2"', 'sans-serif'],
+      }
+    }
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body class="font-body overflow-hidden">
+
+<!-- THREE.JS CANVAS BACKGROUND -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- MAIN LAYOUT -->
+<div id="app" class="flex h-screen w-screen overflow-hidden relative z-10">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar flex flex-col transition-all duration-300" style="width:260px">
+    <!-- Logo -->
+    <div class="logo-area p-4 flex items-center gap-3 border-b border-accent/20">
+      <div class="logo-icon relative">
+        <div class="logo-hex"></div>
+        <i data-lucide="zap" class="w-5 h-5 text-accent absolute inset-0 m-auto"></i>
+      </div>
+      <div>
+        <div class="font-display text-lg font-bold text-accent tracking-widest">CYPHER</div>
+        <div class="text-xs text-muted font-mono tracking-wider">FILE SERVER</div>
+      </div>
+      <button id="sidebar-toggle" class="ml-auto icon-btn" title="Toggle Sidebar">
+        <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="p-3 border-b border-accent/10">
+      <div class="search-box flex items-center gap-2 px-3 py-2 rounded-lg">
+        <i data-lucide="search" class="w-4 h-4 text-muted flex-shrink-0"></i>
+        <input id="search-input" type="text" placeholder="Search files..." class="bg-transparent text-sm outline-none w-full text-primary placeholder-muted font-mono"/>
+        <button id="search-clear" class="hidden text-muted hover:text-accent">
+          <i data-lucide="x" class="w-3 h-3"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Filter -->
+    <div class="p-3 border-b border-accent/10">
+      <div class="text-xs text-muted font-mono mb-2 uppercase tracking-widest">Categories</div>
+      <div class="flex flex-col gap-1" id="category-filters">
+        <button class="cat-btn active" data-cat="all">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i><span>All Files</span>
+        </button>
+        <button class="cat-btn" data-cat="folder">
+          <i data-lucide="folder" class="w-4 h-4"></i><span>Folders</span>
+        </button>
+        <button class="cat-btn" data-cat="pictures">
+          <i data-lucide="image" class="w-4 h-4"></i><span>Pictures</span>
+        </button>
+        <button class="cat-btn" data-cat="videos">
+          <i data-lucide="film" class="w-4 h-4"></i><span>Videos</span>
+        </button>
+        <button class="cat-btn" data-cat="music">
+          <i data-lucide="music" class="w-4 h-4"></i><span>Music</span>
+        </button>
+        <button class="cat-btn" data-cat="documents">
+          <i data-lucide="file-text" class="w-4 h-4"></i><span>Documents</span>
+        </button>
+        <button class="cat-btn" data-cat="compressed">
+          <i data-lucide="archive" class="w-4 h-4"></i><span>Archives</span>
+        </button>
+        <button class="cat-btn" data-cat="apks">
+          <i data-lucide="smartphone" class="w-4 h-4"></i><span>APKs</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Directory Tree -->
+    <div class="flex-1 overflow-y-auto p-3">
+      <div class="text-xs text-muted font-mono mb-2 uppercase tracking-widest">Directory Tree</div>
+      <div id="dir-tree" class="dir-tree"></div>
+    </div>
+
+    <!-- Theme Switcher -->
+    <div class="p-3 border-t border-accent/20">
+      <div class="text-xs text-muted font-mono mb-2 uppercase tracking-widest">Theme</div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="theme-btn active" data-theme="dark" title="Dark">
+          <i data-lucide="moon" class="w-3 h-3"></i><span>Dark</span>
+        </button>
+        <button class="theme-btn" data-theme="light" title="Light">
+          <i data-lucide="sun" class="w-3 h-3"></i><span>Light</span>
+        </button>
+        <button class="theme-btn" data-theme="kuromi" title="Kuromi">
+          <span>🐱</span><span>Kuromi</span>
+        </button>
+        <button class="theme-btn" data-theme="cyberpunk" title="Cyberpunk">
+          <i data-lucide="cpu" class="w-3 h-3"></i><span>Cyber</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- TOPBAR -->
+    <header class="topbar flex items-center gap-3 px-4 py-2 border-b border-accent/20">
+      <button id="sidebar-open-btn" class="icon-btn hidden" title="Open Sidebar">
+        <i data-lucide="panel-left-open" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Breadcrumb -->
+      <nav id="breadcrumb" class="breadcrumb flex items-center gap-1 flex-1 overflow-x-auto text-sm font-mono">
+        <button class="bc-item" data-path="">
+          <i data-lucide="home" class="w-3 h-3 inline"></i>
+        </button>
+      </nav>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2">
+        <button id="select-mode-btn" class="icon-btn" title="Select Mode">
+          <i data-lucide="check-square" class="w-4 h-4"></i>
+        </button>
+        <button id="refresh-btn" class="icon-btn" title="Refresh">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+        <div class="view-toggle flex gap-1 p-1 rounded-lg bg-surface2">
+          <button id="grid-btn" class="view-btn active" title="Grid View">
+            <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+          </button>
+          <button id="list-btn" class="view-btn" title="List View">
+            <i data-lucide="list" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- SELECTION TOOLBAR (hidden by default) -->
+    <div id="selection-bar" class="hidden selection-bar px-4 py-2 flex items-center gap-3 border-b border-accent/20">
+      <button id="select-all-btn" class="action-btn">
+        <i data-lucide="check-square-2" class="w-4 h-4"></i><span>All</span>
+      </button>
+      <button id="deselect-btn" class="action-btn">
+        <i data-lucide="square" class="w-4 h-4"></i><span>None</span>
+      </button>
+      <span id="selected-count" class="text-sm font-mono text-accent ml-2">0 selected</span>
+      <div class="flex-1"></div>
+      <button id="download-selected-btn" class="action-btn-primary">
+        <i data-lucide="download" class="w-4 h-4"></i><span>Download ZIP</span>
+      </button>
+      <button id="cancel-select-btn" class="action-btn">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- FILE GRID / LIST -->
+    <div id="files-area" class="flex-1 overflow-y-auto p-4 relative">
+      <!-- Sort bar -->
+      <div id="sort-bar" class="sort-bar flex items-center gap-4 mb-4 text-xs font-mono text-muted">
+        <button class="sort-btn active" data-sort="name">Name <i data-lucide="chevrons-up-down" class="w-3 h-3 inline"></i></button>
+        <button class="sort-btn" data-sort="size">Size</button>
+        <button class="sort-btn" data-sort="modified">Modified</button>
+        <button class="sort-btn" data-sort="type">Type</button>
+        <span id="file-count" class="ml-auto text-muted font-mono"></span>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" class="hidden flex flex-col items-center justify-center h-64 gap-4">
+        <div class="loader-ring"></div>
+        <div class="text-muted font-mono text-sm">Loading...</div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="hidden flex flex-col items-center justify-center h-64 gap-3">
+        <i data-lucide="folder-open" class="w-16 h-16 text-muted/30"></i>
+        <div class="text-muted font-mono">Empty directory</div>
+      </div>
+
+      <!-- Search Results -->
+      <div id="search-results" class="hidden">
+        <div class="text-sm font-mono text-muted mb-3">Search results for: <span id="search-query-text" class="text-accent"></span></div>
+        <div id="search-grid" class="files-grid"></div>
+      </div>
+
+      <!-- Files Grid -->
+      <div id="files-grid" class="files-grid"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOWNLOAD MANAGER PANEL -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="download-panel" class="download-panel hidden">
+  <div class="download-panel-header flex items-center gap-2 p-3 border-b border-accent/20">
+    <i data-lucide="download-cloud" class="w-4 h-4 text-accent"></i>
+    <span class="font-mono text-sm font-semibold">Downloads</span>
+    <span id="dl-count" class="ml-auto badge">0</span>
+    <button id="dl-panel-close" class="icon-btn">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  </div>
+  <div id="dl-list" class="overflow-y-auto max-h-72 p-2 flex flex-col gap-2"></div>
+  <div class="p-2 border-t border-accent/20 flex gap-2">
+    <button id="dl-clear-done" class="action-btn text-xs">
+      <i data-lucide="trash-2" class="w-3 h-3"></i> Clear Done
+    </button>
+  </div>
+</div>
+
+<button id="dl-toggle-btn" class="dl-toggle-btn icon-btn" title="Downloads">
+  <i data-lucide="download" class="w-5 h-5"></i>
+  <span id="dl-badge" class="dl-badge hidden">0</span>
+</button>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- MODALS CONTAINER -->
+<!-- ═══════════════════════════════════════════════ -->
+<div id="modals"></div>
+
+<!-- VIDEO PLAYER MODAL -->
+<div id="video-modal" class="modal-overlay hidden">
+  <div class="modal-content video-modal-content">
+    <div class="modal-header">
+      <span id="video-title" class="font-mono text-sm truncate flex-1"></span>
+      <div class="flex gap-2">
+        <button id="video-pip" class="icon-btn" title="Picture in Picture">
+          <i data-lucide="picture-in-picture-2" class="w-4 h-4"></i>
+        </button>
+        <button id="video-download" class="icon-btn" title="Download">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </button>
+        <button id="video-close" class="icon-btn close-btn">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+    <div class="video-container">
+      <video id="video-el" class="w-full max-h-[70vh] bg-black" crossorigin="anonymous"></video>
+      <!-- Custom Track select overlays -->
+      <div id="video-controls-custom" class="video-controls">
+        <div class="video-progress-area">
+          <div class="video-time-tooltip" id="time-tooltip">0:00</div>
+          <div id="video-progress-bar" class="progress-bar-bg">
+            <div id="video-progress-fill" class="progress-bar-fill"></div>
+            <div id="video-progress-thumb" class="progress-thumb"></div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 px-3 pb-2">
+          <button id="vc-play" class="icon-btn"><i data-lucide="play" class="w-5 h-5"></i></button>
+          <button id="vc-skip-back" class="icon-btn"><i data-lucide="skip-back" class="w-4 h-4"></i></button>
+          <button id="vc-skip-fwd" class="icon-btn"><i data-lucide="skip-forward" class="w-4 h-4"></i></button>
+          <div class="flex items-center gap-1">
+            <button id="vc-mute" class="icon-btn"><i data-lucide="volume-2" class="w-4 h-4"></i></button>
+            <input id="vc-vol" type="range" min="0" max="1" step="0.05" value="1" class="mini-range w-16"/>
+          </div>
+          <span id="vc-time" class="font-mono text-xs text-muted ml-1">0:00 / 0:00</span>
+          <div class="flex-1"></div>
+          <!-- Speed -->
+          <select id="vc-speed" class="mini-select font-mono text-xs">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+          <!-- Subtitles -->
+          <div class="relative" id="sub-menu-wrap">
+            <button id="vc-sub" class="icon-btn" title="Subtitles">
+              <i data-lucide="subtitles" class="w-4 h-4"></i>
+            </button>
+            <div id="sub-menu" class="track-menu hidden"></div>
+          </div>
+          <!-- Audio Track -->
+          <div class="relative" id="audio-track-wrap">
+            <button id="vc-audio-track" class="icon-btn" title="Audio Track">
+              <i data-lucide="mic" class="w-4 h-4"></i>
+            </button>
+            <div id="audio-track-menu" class="track-menu hidden"></div>
+          </div>
+          <!-- Upload Sub -->
+          <label class="icon-btn cursor-pointer" title="Upload Subtitle">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            <input type="file" id="sub-upload" accept=".srt,.vtt,.ass,.ssa" class="hidden"/>
+          </label>
+          <button id="vc-fullscreen" class="icon-btn"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIO PLAYER MODAL -->
+<div id="audio-modal" class="modal-overlay hidden">
+  <div class="modal-content audio-modal-content">
+    <div class="modal-header">
+      <i data-lucide="music-4" class="w-4 h-4 text-accent"></i>
+      <span id="audio-title" class="font-mono text-sm truncate flex-1 ml-2"></span>
+      <button id="audio-close" class="icon-btn close-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="audio-player-body">
+      <!-- Visualizer -->
+      <canvas id="audio-visualizer" class="w-full rounded-lg" height="120"></canvas>
+      <!-- Album Art placeholder -->
+      <div class="audio-art">
+        <div class="audio-art-disc">
+          <i data-lucide="disc-3" class="w-16 h-16 text-accent audio-disc-icon"></i>
+        </div>
+        <div class="audio-art-info">
+          <div id="audio-name" class="font-display text-lg font-bold text-primary truncate"></div>
+          <div id="audio-ext" class="text-muted text-sm font-mono"></div>
+        </div>
+      </div>
+      <!-- Progress -->
+      <div class="px-4">
+        <div id="audio-progress-bar" class="progress-bar-bg cursor-pointer">
+          <div id="audio-progress-fill" class="progress-bar-fill"></div>
+          <div id="audio-progress-thumb" class="progress-thumb"></div>
+        </div>
+        <div class="flex justify-between text-xs font-mono text-muted mt-1">
+          <span id="audio-current">0:00</span>
+          <span id="audio-total">0:00</span>
+        </div>
+      </div>
+      <!-- Controls -->
+      <div class="audio-controls flex items-center justify-center gap-4 py-2">
+        <button id="ac-shuffle" class="icon-btn" title="Shuffle"><i data-lucide="shuffle" class="w-4 h-4"></i></button>
+        <button id="ac-prev" class="icon-btn"><i data-lucide="skip-back" class="w-5 h-5"></i></button>
+        <button id="ac-play" class="play-btn-big"><i data-lucide="play" class="w-6 h-6"></i></button>
+        <button id="ac-next" class="icon-btn"><i data-lucide="skip-forward" class="w-5 h-5"></i></button>
+        <button id="ac-repeat" class="icon-btn" title="Repeat"><i data-lucide="repeat" class="w-4 h-4"></i></button>
+      </div>
+      <!-- Volume + Speed -->
+      <div class="flex items-center gap-3 px-4 pb-2">
+        <i data-lucide="volume-2" class="w-4 h-4 text-muted"></i>
+        <input id="ac-vol" type="range" min="0" max="1" step="0.02" value="1" class="mini-range flex-1"/>
+        <select id="ac-speed" class="mini-select font-mono text-xs">
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+        <button id="ac-download" class="icon-btn" title="Download">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <!-- Playlist -->
+      <div id="audio-playlist" class="audio-playlist hidden">
+        <div class="text-xs font-mono text-muted p-2 border-b border-accent/20">PLAYLIST</div>
+        <div id="playlist-items" class="max-h-40 overflow-y-auto"></div>
+      </div>
+      <button id="ac-playlist-toggle" class="w-full text-xs font-mono text-muted hover:text-accent py-2 text-center">
+        <i data-lucide="list-music" class="w-3 h-3 inline mr-1"></i> Playlist
+      </button>
+    </div>
+    <audio id="audio-el" crossorigin="anonymous"></audio>
+  </div>
+</div>
+
+<!-- PDF VIEWER MODAL -->
+<div id="pdf-modal" class="modal-overlay hidden">
+  <div class="modal-content pdf-modal-content">
+    <div class="modal-header">
+      <i data-lucide="file-text" class="w-4 h-4 text-accent"></i>
+      <span id="pdf-title" class="font-mono text-sm truncate flex-1 ml-2"></span>
+      <div class="flex gap-2 items-center">
+        <button id="pdf-print" class="icon-btn" title="Print"><i data-lucide="printer" class="w-4 h-4"></i></button>
+        <button id="pdf-download" class="icon-btn" title="Download"><i data-lucide="download" class="w-4 h-4"></i></button>
+        <button id="pdf-close" class="icon-btn close-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+    <div class="pdf-toolbar flex items-center gap-2 px-3 py-2 border-b border-accent/20">
+      <button id="pdf-prev" class="icon-btn"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+      <span class="font-mono text-sm">
+        <input id="pdf-page-input" type="number" min="1" class="mini-input w-12 text-center"/> 
+        / <span id="pdf-total-pages">1</span>
+      </span>
+      <button id="pdf-next" class="icon-btn"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+      <div class="w-px h-4 bg-accent/20 mx-1"></div>
+      <button id="pdf-zoom-out" class="icon-btn"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+      <span id="pdf-zoom-level" class="font-mono text-xs text-muted">100%</span>
+      <button id="pdf-zoom-in" class="icon-btn"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+      <button id="pdf-fit" class="icon-btn" title="Fit to width"><i data-lucide="maximize-2" class="w-4 h-4"></i></button>
+    </div>
+    <div id="pdf-container" class="pdf-container"></div>
+    <div id="pdf-loading" class="hidden flex items-center justify-center h-64">
+      <div class="loader-ring"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PICTURE VIEWER MODAL -->
+<div id="picture-modal" class="modal-overlay hidden">
+  <div class="modal-content picture-modal-content">
+    <div class="modal-header">
+      <span id="picture-title" class="font-mono text-sm truncate flex-1"></span>
+      <div class="flex gap-2">
+        <button id="pic-download" class="icon-btn" title="Download"><i data-lucide="download" class="w-4 h-4"></i></button>
+        <button id="pic-close" class="icon-btn close-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+    <div class="picture-viewer-area" id="picture-viewer-area">
+      <button id="pic-prev" class="pic-nav-btn left-2"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+      <div class="picture-img-wrap" id="picture-img-wrap">
+        <img id="picture-img" src="" alt="" class="max-h-[75vh] max-w-full object-contain rounded"/>
+      </div>
+      <button id="pic-next" class="pic-nav-btn right-2"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+    </div>
+    <div class="flex items-center justify-center gap-4 py-2 border-t border-accent/20">
+      <button id="pic-zoom-out" class="icon-btn"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+      <button id="pic-reset" class="icon-btn"><i data-lucide="maximize-2" class="w-4 h-4"></i></button>
+      <button id="pic-zoom-in" class="icon-btn"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+      <span id="pic-counter" class="font-mono text-xs text-muted mx-4">1 / 1</span>
+      <button id="pic-rotate" class="icon-btn" title="Rotate"><i data-lucide="rotate-cw" class="w-4 h-4"></i></button>
+    </div>
+    <!-- Thumbnail Strip -->
+    <div id="pic-thumbs" class="pic-thumbs overflow-x-auto flex gap-2 p-2 border-t border-accent/20"></div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu" class="ctx-menu hidden">
+  <button class="ctx-item" id="ctx-open"><i data-lucide="folder-open" class="w-4 h-4"></i> Open</button>
+  <button class="ctx-item" id="ctx-download"><i data-lucide="download" class="w-4 h-4"></i> Download</button>
+  <button class="ctx-item" id="ctx-zip-dir"><i data-lucide="archive" class="w-4 h-4"></i> Download as ZIP</button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-item" id="ctx-copy-path"><i data-lucide="copy" class="w-4 h-4"></i> Copy Path</button>
+  <button class="ctx-item" id="ctx-info"><i data-lucide="info" class="w-4 h-4"></i> File Info</button>
+</div>
+
+<!-- TOAST NOTIFICATIONS -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- FILE INFO MODAL -->
+<div id="info-modal" class="modal-overlay hidden">
+  <div class="modal-content info-modal-content">
+    <div class="modal-header">
+      <i data-lucide="info" class="w-4 h-4 text-accent"></i>
+      <span class="font-mono text-sm ml-2">File Info</span>
+      <button id="info-close" class="icon-btn close-btn ml-auto"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div id="info-body" class="p-4 font-mono text-sm"></div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="/_static/background.js"></script>
+<script src="/_static/design.js"></script>
+<script src="/_static/download.js"></script>
+<script src="/_static/video_player.js"></script>
+<script src="/_static/audio_player.js"></script>
+<script src="/_static/pdf_viewer.js"></script>
+<script src="/_static/picture_viewer.js"></script>
+<script>
+// ═══════════════════════════════════════════════════
+//  MAIN APP CONTROLLER
+// ═══════════════════════════════════════════════════
+const App = (() => {
+  let currentPath = '';
+  let allItems = [];
+  let filteredItems = [];
+  let currentCategory = 'all';
+  let currentSort = { key: 'name', dir: 1 };
+  let viewMode = 'grid'; // 'grid' | 'list'
+  let selectMode = false;
+  let selectedPaths = new Set();
+  let searchMode = false;
+
+  // ── INIT ──
+  async function init() {
+    lucide.createIcons();
+    loadTheme();
+    bindEvents();
+    await loadDirectory('');
+    await loadTree();
+    registerSW();
+  }
+
+  // ── BIND EVENTS ──
+  function bindEvents() {
+    // Sidebar toggle
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      const sb = document.getElementById('sidebar');
+      const openBtn = document.getElementById('sidebar-open-btn');
+      sb.classList.toggle('collapsed');
+      openBtn.classList.toggle('hidden', !sb.classList.contains('collapsed'));
+    });
+    document.getElementById('sidebar-open-btn').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.remove('collapsed');
+      document.getElementById('sidebar-open-btn').classList.add('hidden');
+    });
+
+    // View toggle
+    document.getElementById('grid-btn').addEventListener('click', () => setView('grid'));
+    document.getElementById('list-btn').addEventListener('click', () => setView('list'));
+
+    // Refresh
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+      loadDirectory(currentPath);
+      Design.animateSpin('refresh-btn');
+    });
+
+    // Category filters
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentCategory = btn.dataset.cat;
+        renderFiles();
+      });
+    });
+
+    // Sort buttons
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.sort;
+        if (currentSort.key === key) currentSort.dir *= -1;
+        else currentSort = { key, dir: 1 };
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderFiles();
+      });
+    });
+
+    // Select mode
+    document.getElementById('select-mode-btn').addEventListener('click', toggleSelectMode);
+    document.getElementById('cancel-select-btn').addEventListener('click', toggleSelectMode);
+    document.getElementById('select-all-btn').addEventListener('click', selectAll);
+    document.getElementById('deselect-btn').addEventListener('click', deselectAll);
+    document.getElementById('download-selected-btn').addEventListener('click', downloadSelected);
+
+    // Search
+    const searchInput = document.getElementById('search-input');
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      const q = searchInput.value.trim();
+      document.getElementById('search-clear').classList.toggle('hidden', !q);
+      if (!q) {
+        exitSearch();
+      } else {
+        searchTimeout = setTimeout(() => performSearch(q), 400);
+      }
+    });
+    document.getElementById('search-clear').addEventListener('click', () => {
+      searchInput.value = '';
+      document.getElementById('search-clear').classList.add('hidden');
+      exitSearch();
+    });
+
+    // Close context menu
+    document.addEventListener('click', () => hideCtxMenu());
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        hideCtxMenu();
+        closeAllModals();
+        if (selectMode) toggleSelectMode();
+      }
+    });
+
+    // Theme buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        Design.setTheme(btn.dataset.theme);
+      });
+    });
+  }
+
+  // ── LOAD DIRECTORY ──
+  async function loadDirectory(dirPath) {
+    showLoading(true);
+    try {
+      const res = await fetch(`/api/browse?path=${encodeURIComponent(dirPath)}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      currentPath = dirPath;
+      allItems = data.items;
+      updateBreadcrumb(dirPath);
+      renderFiles();
+      showLoading(false);
+    } catch (err) {
+      showLoading(false);
+      Toast.error('Failed to load: ' + err.message);
+    }
+  }
+
+  // ── RENDER FILES ──
+  function renderFiles() {
+    if (searchMode) return;
+    let items = [...allItems];
+
+    // Category filter
+    if (currentCategory !== 'all') {
+      items = items.filter(i => i.category === currentCategory);
+    }
+
+    // Sort
+    items.sort((a, b) => {
+      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+      let va = a[currentSort.key] || '';
+      let vb = b[currentSort.key] || '';
+      if (currentSort.key === 'size') { va = a.size; vb = b.size; }
+      if (currentSort.key === 'modified') { va = new Date(a.modified); vb = new Date(b.modified); }
+      if (typeof va === 'string') return va.localeCompare(vb, undefined, { sensitivity: 'base' }) * currentSort.dir;
+      return (va - vb) * currentSort.dir;
+    });
+
+    filteredItems = items;
+    document.getElementById('file-count').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+
+    const grid = document.getElementById('files-grid');
+    grid.innerHTML = '';
+    grid.className = viewMode === 'grid' ? 'files-grid' : 'files-list';
+
+    document.getElementById('empty-state').classList.toggle('hidden', items.length > 0);
+
+    items.forEach((item, idx) => {
+      grid.appendChild(createFileCard(item, idx));
+    });
+    lucide.createIcons();
+  }
+
+  // ── CREATE FILE CARD ──
+  function createFileCard(item, idx) {
+    const el = document.createElement('div');
+    el.className = viewMode === 'grid' ? 'file-card' : 'file-row';
+    el.dataset.path = item.path;
+    el.dataset.cat = item.category;
+    el.style.animationDelay = `${Math.min(idx * 30, 300)}ms`;
+
+    const isSelected = selectedPaths.has(item.path);
+    if (isSelected) el.classList.add('selected');
+
+    const icon = getIcon(item);
+    const colorClass = getCategoryColor(item.category);
+
+    if (viewMode === 'grid') {
+      el.innerHTML = `
+        ${selectMode ? `<div class="file-checkbox"><input type="checkbox" ${isSelected ? 'checked' : ''} class="item-cb" data-path="${item.path}"/></div>` : ''}
+        <div class="file-card-icon ${colorClass}">
+          <i data-lucide="${icon}" class="w-8 h-8"></i>
+        </div>
+        <div class="file-card-name" title="${item.name}">${item.name}</div>
+        <div class="file-card-meta">${item.isDirectory ? 'Folder' : item.sizeFormatted}</div>
+        <div class="file-card-actions">
+          ${!item.isDirectory ? `<button class="icon-btn-xs dl-btn" data-path="${item.path}" title="Download"><i data-lucide="download" class="w-3 h-3"></i></button>` : `<button class="icon-btn-xs zip-btn" data-path="${item.path}" title="Download ZIP"><i data-lucide="archive" class="w-3 h-3"></i></button>`}
+          <button class="icon-btn-xs info-btn" data-path="${item.path}" title="Info"><i data-lucide="info" class="w-3 h-3"></i></button>
+        </div>
+      `;
+    } else {
+      const date = new Date(item.modified).toLocaleDateString();
+      el.innerHTML = `
+        ${selectMode ? `<div class="pl-2"><input type="checkbox" ${isSelected ? 'checked' : ''} class="item-cb" data-path="${item.path}"/></div>` : ''}
+        <div class="file-row-icon ${colorClass}"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
+        <div class="file-row-name flex-1 truncate" title="${item.name}">${item.name}</div>
+        <div class="file-row-cat text-xs text-muted font-mono w-20 text-center hidden sm:block">${item.category}</div>
+        <div class="file-row-size text-xs text-muted font-mono w-20 text-right hidden sm:block">${item.sizeFormatted}</div>
+        <div class="file-row-date text-xs text-muted font-mono w-24 text-right hidden md:block">${date}</div>
+        <div class="file-row-actions flex gap-1">
+          ${!item.isDirectory ? `<button class="icon-btn-xs dl-btn" data-path="${item.path}"><i data-lucide="download" class="w-3 h-3"></i></button>` : `<button class="icon-btn-xs zip-btn" data-path="${item.path}"><i data-lucide="archive" class="w-3 h-3"></i></button>`}
+        </div>
+      `;
+    }
+
+    // Events
+    el.addEventListener('click', e => handleFileClick(e, item));
+    el.addEventListener('contextmenu', e => showCtxMenu(e, item));
+    el.addEventListener('dblclick', e => { e.preventDefault(); openItem(item); });
+
+    return el;
+  }
+
+  // ── HANDLE CLICK ──
+  function handleFileClick(e, item) {
+    if (e.target.closest('.dl-btn')) { e.stopPropagation(); Download.download(item.path, item.name); return; }
+    if (e.target.closest('.zip-btn')) { e.stopPropagation(); Download.downloadDirZip(item.path); return; }
+    if (e.target.closest('.info-btn')) { e.stopPropagation(); showInfo(item.path); return; }
+    if (e.target.closest('.item-cb')) {
+      const cb = e.target.closest('.item-cb');
+      toggleSelect(item.path, cb.checked);
+      return;
+    }
+    if (selectMode) {
+      toggleSelect(item.path, !selectedPaths.has(item.path));
+      return;
+    }
+    openItem(item);
+  }
+
+  // ── OPEN ITEM ──
+  function openItem(item) {
+    if (item.isDirectory) {
+      loadDirectory(item.path);
+      return;
+    }
+    const cat = item.category;
+    const path = item.path;
+    if (cat === 'videos') VideoPlayer.open(path, item.name);
+    else if (cat === 'music') AudioPlayer.open(path, item.name, filteredItems.filter(i => i.category === 'music'));
+    else if (cat === 'documents' && item.ext === '.pdf') PDFViewer.open(path, item.name);
+    else if (cat === 'pictures') PictureViewer.open(path, item.name, filteredItems.filter(i => i.category === 'pictures'));
+    else if (cat === 'compressed' || cat === 'apks') Download.download(path, item.name);
+    else Download.download(path, item.name);
+  }
+
+  // ── BREADCRUMB ──
+  function updateBreadcrumb(dirPath) {
+    const bc = document.getElementById('breadcrumb');
+    bc.innerHTML = '';
+    const home = document.createElement('button');
+    home.className = 'bc-item';
+    home.innerHTML = '<i data-lucide="home" class="w-3 h-3 inline mr-1"></i>Root';
+    home.addEventListener('click', () => loadDirectory(''));
+    bc.appendChild(home);
+
+    if (dirPath) {
+      const parts = dirPath.replace(/\\/g, '/').split('/').filter(Boolean);
+      let built = '';
+      parts.forEach((part, i) => {
+        built += (built ? '/' : '') + part;
+        const sep = document.createElement('span');
+        sep.className = 'bc-sep';
+        sep.innerHTML = '<i data-lucide="chevron-right" class="w-3 h-3 inline"></i>';
+        bc.appendChild(sep);
+        const btn = document.createElement('button');
+        btn.className = 'bc-item' + (i === parts.length - 1 ? ' active' : '');
+        btn.textContent = part;
+        const capPath = built;
+        btn.addEventListener('click', () => loadDirectory(capPath));
+        bc.appendChild(btn);
+      });
+    }
+    lucide.createIcons();
+  }
+
+  // ── TREE ──
+  async function loadTree() {
+    try {
+      const res = await fetch('/api/tree');
+      const tree = await res.json();
+      const treeEl = document.getElementById('dir-tree');
+      treeEl.innerHTML = '';
+      renderTree(tree, treeEl, '');
+      lucide.createIcons();
+    } catch {}
+  }
+
+  function renderTree(nodes, parent, prefix) {
+    nodes.forEach(node => {
+      const item = document.createElement('div');
+      item.className = 'tree-item';
+      item.innerHTML = `<i data-lucide="folder" class="w-3 h-3 text-amber-400 flex-shrink-0"></i><span class="truncate">${node.name}</span>`;
+      item.addEventListener('click', e => { e.stopPropagation(); loadDirectory(node.path); });
+      parent.appendChild(item);
+      if (node.children && node.children.length) {
+        const sub = document.createElement('div');
+        sub.className = 'tree-children pl-3';
+        renderTree(node.children, sub, node.path + '/');
+        parent.appendChild(sub);
+      }
+    });
+  }
+
+  // ── SEARCH ──
+  async function performSearch(q) {
+    searchMode = true;
+    document.getElementById('search-results').classList.remove('hidden');
+    document.getElementById('files-grid').classList.add('hidden');
+    document.getElementById('search-query-text').textContent = q;
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const results = await res.json();
+      const grid = document.getElementById('search-grid');
+      grid.innerHTML = '';
+      grid.className = viewMode === 'grid' ? 'files-grid' : 'files-list';
+      results.forEach((item, i) => grid.appendChild(createFileCard(item, i)));
+      lucide.createIcons();
+    } catch (err) { Toast.error('Search failed'); }
+  }
+
+  function exitSearch() {
+    searchMode = false;
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('files-grid').classList.remove('hidden');
+    renderFiles();
+  }
+
+  // ── SELECT MODE ──
+  function toggleSelectMode() {
+    selectMode = !selectMode;
+    selectedPaths.clear();
+    document.getElementById('selection-bar').classList.toggle('hidden', !selectMode);
+    document.getElementById('select-mode-btn').classList.toggle('active', selectMode);
+    updateSelectedCount();
+    renderFiles();
+  }
+
+  function toggleSelect(path, checked) {
+    if (checked) selectedPaths.add(path);
+    else selectedPaths.delete(path);
+    updateSelectedCount();
+    // Update card
+    document.querySelectorAll(`[data-path="${path}"]`).forEach(el => {
+      el.classList.toggle('selected', checked);
+      const cb = el.querySelector('.item-cb');
+      if (cb) cb.checked = checked;
+    });
+  }
+
+  function selectAll() {
+    filteredItems.forEach(i => selectedPaths.add(i.path));
+    updateSelectedCount();
+    renderFiles();
+  }
+
+  function deselectAll() {
+    selectedPaths.clear();
+    updateSelectedCount();
+    renderFiles();
+  }
+
+  function updateSelectedCount() {
+    document.getElementById('selected-count').textContent = `${selectedPaths.size} selected`;
+  }
+
+  async function downloadSelected() {
+    if (selectedPaths.size === 0) { Toast.warn('No files selected'); return; }
+    Download.downloadMultiple([...selectedPaths]);
+  }
+
+  // ── CONTEXT MENU ──
+  let ctxItem = null;
+  function showCtxMenu(e, item) {
+    e.preventDefault();
+    ctxItem = item;
+    const menu = document.getElementById('ctx-menu');
+    menu.classList.remove('hidden');
+    menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
+    menu.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
+
+    document.getElementById('ctx-zip-dir').classList.toggle('hidden', !item.isDirectory);
+    document.getElementById('ctx-download').classList.toggle('hidden', item.isDirectory);
+    document.getElementById('ctx-open').textContent = item.isDirectory ? '📁 Open Folder' : '▶ Open';
+
+    document.getElementById('ctx-open').onclick = () => { openItem(item); hideCtxMenu(); };
+    document.getElementById('ctx-download').onclick = () => { Download.download(item.path, item.name); hideCtxMenu(); };
+    document.getElementById('ctx-zip-dir').onclick = () => { Download.downloadDirZip(item.path); hideCtxMenu(); };
+    document.getElementById('ctx-copy-path').onclick = () => { navigator.clipboard?.writeText(item.path); Toast.info('Path copied'); hideCtxMenu(); };
+    document.getElementById('ctx-info').onclick = () => { showInfo(item.path); hideCtxMenu(); };
+  }
+
+  function hideCtxMenu() {
+    document.getElementById('ctx-menu').classList.add('hidden');
+  }
+
+  // ── FILE INFO ──
+  async function showInfo(path) {
+    try {
+      const res = await fetch(`/api/info?path=${encodeURIComponent(path)}`);
+      const info = await res.json();
+      document.getElementById('info-body').innerHTML = `
+        <div class="grid gap-2">
+          <div class="info-row"><span class="text-muted">Name</span><span class="text-primary">${info.name}</span></div>
+          <div class="info-row"><span class="text-muted">Size</span><span class="text-primary">${info.sizeFormatted} (${info.size.toLocaleString()} bytes)</span></div>
+          <div class="info-row"><span class="text-muted">Type</span><span class="text-accent">${info.mimeType}</span></div>
+          <div class="info-row"><span class="text-muted">Category</span><span class="text-primary">${info.category}</span></div>
+          <div class="info-row"><span class="text-muted">Modified</span><span class="text-primary">${new Date(info.modified).toLocaleString()}</span></div>
+          <div class="info-row"><span class="text-muted">Created</span><span class="text-primary">${new Date(info.created).toLocaleString()}</span></div>
+        </div>
+      `;
+      document.getElementById('info-modal').classList.remove('hidden');
+      document.getElementById('info-close').onclick = () => document.getElementById('info-modal').classList.add('hidden');
+    } catch {}
+  }
+
+  // ── UTILS ──
+  function setView(mode) {
+    viewMode = mode;
+    document.getElementById('grid-btn').classList.toggle('active', mode === 'grid');
+    document.getElementById('list-btn').classList.toggle('active', mode === 'list');
+    renderFiles();
+  }
+
+  function showLoading(show) {
+    document.getElementById('loading-state').classList.toggle('hidden', !show);
+    document.getElementById('files-grid').classList.toggle('hidden', show);
+  }
+
+  function closeAllModals() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+  }
+
+  function loadTheme() {
+    const t = localStorage.getItem('cypher-theme') || 'dark';
+    Design.setTheme(t);
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+  }
+
+  function registerSW() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/_static/sw.js').catch(() => {});
+    }
+  }
+
+  function getIcon(item) {
+    if (item.isDirectory) return 'folder';
+    const icons = {
+      pictures: 'image', videos: 'film', music: 'music-2',
+      documents: item.ext === '.pdf' ? 'file-text' : 'file',
+      compressed: 'package', apks: 'smartphone', other: 'file',
+    };
+    return icons[item.category] || 'file';
+  }
+
+  function getCategoryColor(cat) {
+    const colors = {
+      folder: 'text-amber-400', pictures: 'text-pink-400', videos: 'text-purple-400',
+      music: 'text-green-400', documents: 'text-blue-400', compressed: 'text-orange-400',
+      apks: 'text-cyan-400', other: 'text-gray-400',
+    };
+    return colors[cat] || 'text-gray-400';
+  }
+
+  // ── PUBLIC ──
+  return { init, loadDirectory, currentPath: () => currentPath };
+})();
+
+// ── TOAST ──
+const Toast = {
+  show(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icons = { info: 'info', success: 'check-circle', error: 'alert-circle', warn: 'alert-triangle' };
+    toast.innerHTML = `<i data-lucide="${icons[type]}" class="w-4 h-4"></i><span>${msg}</span>`;
+    container.appendChild(toast);
+    lucide.createIcons({ nodes: [toast] });
+    setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); }, 3000);
+  },
+  info: msg => Toast.show(msg, 'info'),
+  success: msg => Toast.show(msg, 'success'),
+  error: msg => Toast.show(msg, 'error'),
+  warn: msg => Toast.show(msg, 'warn'),
+};
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>

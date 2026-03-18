@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cypher Server — Design System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link rel="stylesheet" href="/_static/styles.css"/>
+<style>
+  body { font-family: 'Rajdhani', sans-serif; overflow-x: hidden; }
+  .section { margin-bottom: 3rem; }
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .color-swatch {
+    height: 56px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    border: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .theme-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    transition: all 0.2s;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .theme-btn:hover, .theme-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .demo-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.2s;
+  }
+  .demo-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px var(--glow); }
+  .badge {
+    display: inline-block; padding: 0.15rem 0.55rem;
+    border-radius: 9999px; font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .badge-video { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .badge-audio { background: rgba(168,85,247,0.15); color: #a855f7; }
+  .badge-pic   { background: rgba(34,197,94,0.15);  color: #22c55e; }
+  .badge-doc   { background: rgba(59,130,246,0.15); color: #3b82f6; }
+  .badge-zip   { background: rgba(234,179,8,0.15);  color: #eab308; }
+  .badge-apk   { background: rgba(20,184,166,0.15); color: #14b8a6; }
+
+  .icon-row { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+  .icon-item { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; font-size: 0.65rem; color: var(--text-muted); }
+  .icon-item i { color: var(--accent); }
+
+  .progress-demo { height: 6px; border-radius: 9999px; background: var(--surface3); overflow: hidden; margin: 0.4rem 0; }
+  .progress-demo-bar { height: 100%; border-radius: 9999px; background: var(--accent); transition: width 0.4s; }
+
+  .font-demo { margin-bottom: 0.75rem; }
+  pre.code-demo {
+    background: var(--surface3); color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem; padding: 1rem; border-radius: 10px;
+    border: 1px solid var(--border); overflow-x: auto;
+  }
+
+  .main-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  header.ds-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+    background: var(--surface); position: sticky; top: 0; z-index: 50;
+  }
+  .logo-text { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; color: var(--accent); font-weight: 900; letter-spacing: 0.15em; }
+  .logo-sub  { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; margin-left: 0.5rem; }
+  .back-btn {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.8rem; color: var(--text-muted); cursor: pointer;
+    padding: 0.35rem 0.75rem; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface2);
+    text-decoration: none; transition: all 0.2s;
+  }
+  .back-btn:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="ds-header">
+  <div style="display:flex;align-items:center;gap:0.5rem;">
+    <span class="logo-text">⬡ CYPHER</span>
+    <span class="logo-sub">DESIGN SYSTEM</span>
+  </div>
+  <a href="/" class="back-btn">
+    <i data-lucide="arrow-left" style="width:14px;height:14px;"></i>
+    Back to Server
+  </a>
+</header>
+
+<div class="main-wrap">
+
+  <!-- Theme Switcher -->
+  <div class="section" style="padding-top:1.5rem;">
+    <div class="section-title">Theme Switcher</div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem;">Switch themes to preview how the design system adapts across all palettes.</p>
+    <div>
+      <button class="theme-btn active" id="btn-dark"     onclick="setTheme('dark')">⬛ Dark</button>
+      <button class="theme-btn"        id="btn-light"    onclick="setTheme('light')">☀️ Light</button>
+      <button class="theme-btn"        id="btn-kuromi"   onclick="setTheme('kuromi')">🖤 Kuromi</button>
+      <button class="theme-btn"        id="btn-cyberpunk" onclick="setTheme('cyberpunk')">⚡ Cyberpunk 2077</button>
+    </div>
+  </div>
+
+  <!-- Color Palette -->
+  <div class="section">
+    <div class="section-title">Color Palette</div>
+    <div class="preview-grid">
+      <div class="color-swatch" style="background:var(--bg);">--bg</div>
+      <div class="color-swatch" style="background:var(--surface);">--surface</div>
+      <div class="color-swatch" style="background:var(--surface2);">--surface2</div>
+      <div class="color-swatch" style="background:var(--surface3);">--surface3</div>
+      <div class="color-swatch" style="background:var(--accent);color:#000;">--accent</div>
+      <div class="color-swatch" style="background:var(--accent2);color:#000;">--accent2</div>
+      <div class="color-swatch" style="border:2px solid var(--border);">--border</div>
+      <div class="color-swatch" style="background:var(--glow);border:1px dashed var(--accent);">--glow</div>
+    </div>
+  </div>
+
+  <!-- Typography -->
+  <div class="section">
+    <div class="section-title">Typography</div>
+    <div class="font-demo" style="font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;color:var(--accent);letter-spacing:0.1em;">Orbitron — Headlines & Logo</div>
+    <div class="font-demo" style="font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:600;color:var(--text);">Rajdhani — Body & UI Text</div>
+    <div class="font-demo" style="font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--text-muted);">JetBrains Mono — Code & Paths</div>
+    <pre class="code-demo">/home/user/documents/cypher-server/README.md   ← 2.4 MB</pre>
+  </div>
+
+  <!-- Icons -->
+  <div class="section">
+    <div class="section-title">Icon Library (Lucide)</div>
+    <div class="icon-row">
+      <div class="icon-item"><i data-lucide="folder" style="width:28px;height:28px;"></i>folder</div>
+      <div class="icon-item"><i data-lucide="file-video" style="width:28px;height:28px;"></i>video</div>
+      <div class="icon-item"><i data-lucide="music" style="width:28px;height:28px;"></i>music</div>
+      <div class="icon-item"><i data-lucide="image" style="width:28px;height:28px;"></i>image</div>
+      <div class="icon-item"><i data-lucide="file-text" style="width:28px;height:28px;"></i>document</div>
+      <div class="icon-item"><i data-lucide="archive" style="width:28px;height:28px;"></i>archive</div>
+      <div class="icon-item"><i data-lucide="smartphone" style="width:28px;height:28px;"></i>apk</div>
+      <div class="icon-item"><i data-lucide="file" style="width:28px;height:28px;"></i>file</div>
+      <div class="icon-item"><i data-lucide="download" style="width:28px;height:28px;"></i>download</div>
+      <div class="icon-item"><i data-lucide="upload" style="width:28px;height:28px;"></i>upload</div>
+      <div class="icon-item"><i data-lucide="search" style="width:28px;height:28px;"></i>search</div>
+      <div class="icon-item"><i data-lucide="settings" style="width:28px;height:28px;"></i>settings</div>
+      <div class="icon-item"><i data-lucide="play" style="width:28px;height:28px;"></i>play</div>
+      <div class="icon-item"><i data-lucide="pause" style="width:28px;height:28px;"></i>pause</div>
+      <div class="icon-item"><i data-lucide="volume-2" style="width:28px;height:28px;"></i>volume</div>
+      <div class="icon-item"><i data-lucide="maximize-2" style="width:28px;height:28px;"></i>fullscreen</div>
+      <div class="icon-item"><i data-lucide="subtitles" style="width:28px;height:28px;"></i>subtitles</div>
+      <div class="icon-item"><i data-lucide="shuffle" style="width:28px;height:28px;"></i>shuffle</div>
+      <div class="icon-item"><i data-lucide="repeat" style="width:28px;height:28px;"></i>repeat</div>
+      <div class="icon-item"><i data-lucide="zap" style="width:28px;height:28px;"></i>speed</div>
+      <div class="icon-item"><i data-lucide="check-square" style="width:28px;height:28px;"></i>select</div>
+      <div class="icon-item"><i data-lucide="refresh-cw" style="width:28px;height:28px;"></i>refresh</div>
+      <div class="icon-item"><i data-lucide="grid" style="width:28px;height:28px;"></i>grid</div>
+      <div class="icon-item"><i data-lucide="list" style="width:28px;height:28px;"></i>list</div>
+    </div>
+  </div>
+
+  <!-- File Category Badges -->
+  <div class="section">
+    <div class="section-title">File Category Badges</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;">
+      <span class="badge badge-video">VIDEO</span>
+      <span class="badge badge-audio">AUDIO</span>
+      <span class="badge badge-pic">PICTURE</span>
+      <span class="badge badge-doc">DOCUMENT</span>
+      <span class="badge badge-zip">ARCHIVE</span>
+      <span class="badge badge-apk">APK</span>
+    </div>
+  </div>
+
+  <!-- File Cards -->
+  <div class="section">
+    <div class="section-title">File Cards</div>
+    <div class="preview-grid">
+      <!-- Video card -->
+      <div class="demo-card">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+          <i data-lucide="file-video" style="width:22px;height:22px;color:var(--accent);flex-shrink:0;"></i>
+          <span style="font-weight:600;font-size:0.92rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">movie.mkv</span>
+        </div>
+        <span class="badge badge-video">VIDEO</span>
+        <div style="margin-top:0.6rem;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">1.82 GB · MKV</div>
+      </div>
+      <!-- Audio card -->
+      <div class="demo-card">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+          <i data-lucide="music" style="width:22px;height:22px;color:var(--accent);flex-shrink:0;"></i>
+          <span style="font-weight:600;font-size:0.92rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">track-01.mp3</span>
+        </div>
+        <span class="badge badge-audio">AUDIO</span>
+        <div style="margin-top:0.6rem;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">8.4 MB · MP3</div>
+      </div>
+      <!-- Picture card -->
+      <div class="demo-card">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+          <i data-lucide="image" style="width:22px;height:22px;color:var(--accent);flex-shrink:0;"></i>
+          <span style="font-weight:600;font-size:0.92rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">wallpaper.jpg</span>
+        </div>
+        <span class="badge badge-pic">PICTURE</span>
+        <div style="margin-top:0.6rem;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">3.1 MB · JPG</div>
+      </div>
+      <!-- PDF card -->
+      <div class="demo-card">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+          <i data-lucide="file-text" style="width:22px;height:22px;color:var(--accent);flex-shrink:0;"></i>
+          <span style="font-weight:600;font-size:0.92rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">report.pdf</span>
+        </div>
+        <span class="badge badge-doc">DOCUMENT</span>
+        <div style="margin-top:0.6rem;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">514 KB · PDF</div>
+      </div>
+      <!-- Archive card -->
+      <div class="demo-card">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+          <i data-lucide="archive" style="width:22px;height:22px;color:var(--accent);flex-shrink:0;"></i>
+          <span style="font-weight:600;font-size:0.92rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">backup.zip</span>
+        </div>
+        <span class="badge badge-zip">ARCHIVE</span>
+        <div style="margin-top:0.6rem;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">240 MB · ZIP</div>
+      </div>
+      <!-- APK card -->
+      <div class="demo-card">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+          <i data-lucide="smartphone" style="width:22px;height:22px;color:var(--accent);flex-shrink:0;"></i>
+          <span style="font-weight:600;font-size:0.92rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">app-release.apk</span>
+        </div>
+        <span class="badge badge-apk">APK</span>
+        <div style="margin-top:0.6rem;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">67 MB · APK</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress / Download -->
+  <div class="section">
+    <div class="section-title">Progress Bars</div>
+    <div style="max-width:480px;display:flex;flex-direction:column;gap:1rem;">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:0.25rem;">
+          <span>movie.mkv</span><span style="color:var(--accent);" id="pct1">72%</span>
+        </div>
+        <div class="progress-demo"><div class="progress-demo-bar" id="bar1" style="width:72%;"></div></div>
+        <div style="font-size:0.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">4.2 MB/s · 00:18 left</div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:0.25rem;">
+          <span>track-01.mp3</span><span style="color:var(--accent);" id="pct2">100%</span>
+        </div>
+        <div class="progress-demo"><div class="progress-demo-bar" id="bar2" style="width:100%;background:var(--accent2);"></div></div>
+        <div style="font-size:0.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Done</div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:0.25rem;">
+          <span>backup.zip</span><span style="color:var(--accent);" id="pct3">31%</span>
+        </div>
+        <div class="progress-demo"><div class="progress-demo-bar" id="bar3" style="width:31%;"></div></div>
+        <div style="font-size:0.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">1.1 MB/s · 03:42 left</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Animated Demo -->
+  <div class="section">
+    <div class="section-title">Animated Progress Demo</div>
+    <div style="max-width:480px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:0.25rem;">
+        <span>Simulated download…</span>
+        <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;" id="liveVal">0%</span>
+      </div>
+      <div class="progress-demo"><div class="progress-demo-bar" id="liveBar" style="width:0%;"></div></div>
+      <div style="display:flex;gap:0.75rem;margin-top:0.6rem;">
+        <button class="theme-btn" onclick="startDemo()">▶ Start</button>
+        <button class="theme-btn" onclick="resetDemo()">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Button Styles -->
+  <div class="section">
+    <div class="section-title">Buttons & Controls</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;">
+      <button style="background:var(--accent);color:#000;border:none;padding:0.4rem 1.1rem;border-radius:8px;font-family:'Orbitron',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;letter-spacing:0.08em;">Primary</button>
+      <button style="background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:0.4rem 1.1rem;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;">Secondary</button>
+      <button style="background:transparent;color:var(--accent);border:1px solid var(--accent);padding:0.4rem 1.1rem;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;">Outline</button>
+      <button style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.4rem 1.1rem;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;">Danger</button>
+      <button style="background:var(--surface2);border:1px solid var(--border);padding:0.4rem 0.6rem;border-radius:8px;cursor:pointer;color:var(--accent);" title="Icon button">
+        <i data-lucide="download" style="width:16px;height:16px;display:block;"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- API Reference -->
+  <div class="section">
+    <div class="section-title">Server API Reference</div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <pre class="code-demo">GET  /api/browse?path=&lt;dir&gt;              → JSON file listing
+GET  /api/tree?path=&lt;dir&gt;               → JSON directory tree
+GET  /api/stream?path=&lt;file&gt;            → HTTP Range streaming
+GET  /api/download?path=&lt;file&gt;          → Download with resume
+POST /api/zip   { paths: [...] }         → Download as ZIP
+GET  /api/zip-dir?path=&lt;dir&gt;            → Whole dir as ZIP
+GET  /api/info?path=&lt;file&gt;              → File metadata JSON
+GET  /api/subtitles?path=&lt;video&gt;        → Adjacent subtitle files
+GET  /api/search?q=&lt;query&gt;&amp;path=&lt;dir&gt;   → Recursive search</pre>
+    </div>
+  </div>
+
+</div><!-- /main-wrap -->
+
+<script>
+// Theme switching
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('cypher-theme', theme);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + theme)?.classList.add('active');
+  lucide.createIcons();
+}
+
+// Load saved theme
+const saved = localStorage.getItem('cypher-theme') || 'dark';
+setTheme(saved);
+
+// Animated progress demo
+let demoInterval = null;
+let demoVal = 0;
+function startDemo() {
+  if (demoInterval) return;
+  demoInterval = setInterval(() => {
+    demoVal = Math.min(demoVal + Math.random() * 3, 100);
+    document.getElementById('liveBar').style.width = demoVal + '%';
+    document.getElementById('liveVal').textContent = Math.round(demoVal) + '%';
+    if (demoVal >= 100) {
+      clearInterval(demoInterval);
+      demoInterval = null;
+    }
+  }, 80);
+}
+function resetDemo() {
+  clearInterval(demoInterval);
+  demoInterval = null;
+  demoVal = 0;
+  document.getElementById('liveBar').style.width = '0%';
+  document.getElementById('liveVal').textContent = '0%';
+}
+
+lucide.createIcons();
+</script>
+</body>
+</html>
