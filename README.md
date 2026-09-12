@@ -397,18 +397,17 @@ const CustomViewer = (() => {
 - Environment variables can be used for ROOT_DIR in production
 - Nginx reverse proxy recommended for public deployment
 
-## 🤝 The Witcher's Code: Contributing
+## 🤝 The Witcher's Code: Feedback
 
 > *"A contract is a contract. One must honor their word."*
 
-To strengthen Cypher Server's arsenal:
+Code contributions are not accepted — forks and pull requests cannot be taken
+in, because the licence keeps authorship in one pair of hands. What does help:
 
 1. 🧪 Test the application rigorously (play-test like a true witcher)
 2. 📝 Report issues with crystal-clear descriptions
-3. 💡 Submit improvements and feature suggestions that enhance the whole
-4. 📋 Ensure code follows the existing structure and conventions
-5. 🔍 Review changes against the project's vision
-6. 🚀 Help others learn and improve the codebase
+3. 💡 Send feature suggestions — these get built
+4. 📣 Point people at the only true source: <https://cypherstore.netlify.app>
 
 ## 📞 Seek Counsel: Support & Help
 
